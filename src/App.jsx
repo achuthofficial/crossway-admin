@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NAV, ROLES } from './data.js';
 import { useCommand } from './store.js';
 import { Icon } from './ui.jsx';
+import { IconMorph, MotionProvider, tokens, useMotion, useTheme } from './motion';
 import Modals from './components/Modals.jsx';
 import EdgeDrawer, { EDGE_COUNT } from './components/EdgeDrawer.jsx';
 import Dashboard from './screens/Dashboard.jsx';
@@ -19,7 +21,12 @@ const SCREENS = {
   support: Support, config: Config,
 };
 
-function Sidebar({ s }) {
+const readCollapsed = () => {
+  try { return localStorage.getItem('cw-rail') === '1'; } catch { return false; }
+};
+
+function Sidebar({ s, collapsed, onToggle }) {
+  const m = useMotion();
   const badges = {
     liveops: s.shifts.filter(x => x.sev === 'bad').length,
     verification: s.kyc.length,
@@ -33,36 +40,50 @@ function Sidebar({ s }) {
       <AnimatePresence>
         {s.navOpen && <motion.div className="nav-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => s.setNavOpen(false)} />}
       </AnimatePresence>
-      <aside className={'sidebar' + (s.navOpen ? ' open' : '')}>
-        <div className="brand">
-          <motion.div className="brand-mark" whileHover={{ rotate: -8, scale: 1.05 }}><Icon name="alt_route" size={22} /></motion.div>
-          <div className="brand-text"><b>CrossWay</b><small>Command</small></div>
-        </div>
+      {/* The rail expands/collapses with a spatial spring (layout = transform-based FLIP). */}
+      <motion.aside layout transition={m.spatial()} className={'sidebar' + (s.navOpen ? ' open' : '') + (collapsed ? ' collapsed' : '')} aria-label="Main navigation">
+        <motion.div layout="position" className="brand">
+          <div className="brand-mark"><Icon name="alt_route" size={22} /></div>
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.div className="brand-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={m.effects('fast')}>
+                <b>CrossWay</b><small>Command</small>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <button type="button" className="icon-btn rail-toggle" onClick={onToggle} aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} aria-expanded={!collapsed}>
+            <IconMorph icon={collapsed ? 'left_panel_open' : 'left_panel_close'} />
+          </button>
+        </motion.div>
         {NAV.map(([id, label, icon]) => {
           const active = id === s.screen;
           const ok = s.roleObj.s.includes(id);
           return (
-            <button
+            <motion.button
+              layout="position"
+              transition={m.spatial()}
               key={id}
               type="button"
               className={'nav-item' + (active ? ' active' : '') + (ok ? '' : ' locked')}
               onClick={() => s.setScreen(id)}
               aria-current={active ? 'page' : undefined}
+              title={collapsed ? label : undefined}
             >
-              {active && <motion.span layoutId="nav-pill" className="pill" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+              {/* One indicator morphs between destinations, and between the wide pill and the compact rail shape. */}
+              {active && <motion.span layoutId="nav-pill" className="pill" style={{ borderRadius: 22 }} transition={m.spatial()} />}
               <Icon name={icon} />
-              <span className="label">{label}</span>
-              {!ok && <Icon name="lock" size={16} />}
+              {!collapsed && <span className="label">{label}</span>}
+              {!collapsed && !ok && <Icon name="lock" size={16} />}
               {ok && !!badges[id] && (
-                <motion.span key={badges[id]} className="badge" initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                <motion.span key={badges[id]} className="badge" initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={m.spatial('fast')}>
                   {badges[id]}
                 </motion.span>
               )}
-            </button>
+            </motion.button>
           );
         })}
         <div style={{ flex: 1 }} />
-        <div className="me-card">
+        {!collapsed && <div className="me-card">
           <div className="me-row">
             <div className="avatar">AN</div>
             <div><span style={{ fontSize: 14, fontWeight: 500 }}>Asha Nair</span><small>MFA verified · Bengaluru</small></div>
@@ -71,13 +92,13 @@ function Sidebar({ s }) {
           <select id="role" className="select" value={s.role} onChange={e => s.setRole(e.target.value)}>
             {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
-        </div>
-      </aside>
+        </div>}
+      </motion.aside>
     </>
   );
 }
 
-function Topbar({ s }) {
+function Topbar({ s, theme }) {
   return (
     <header className="topbar">
       <button type="button" className="icon-btn menu-btn" aria-label="Open menu" onClick={() => s.setNavOpen(true)}><Icon name="menu" /></button>
@@ -111,21 +132,31 @@ function Topbar({ s }) {
         ))}
       </div>
       <div className="spacer" />
-      <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} type="button" className="btn btn-tonal" style={{ padding: '0 16px 0 12px' }} onClick={() => s.setEdgeOpen(true)}>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label={theme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+        onClick={e => theme.toggle({ x: e.clientX, y: e.clientY })}
+      >
+        <IconMorph icon={theme.mode === 'dark' ? 'light_mode' : 'dark_mode'} />
+      </button>
+      <motion.button whileTap={{ scale: 0.97 }} type="button" className="btn btn-tonal" style={{ padding: '0 16px 0 12px' }} onClick={() => s.setEdgeOpen(true)}>
         <Icon name="rule" />Edge cases · {EDGE_COUNT}
       </motion.button>
     </header>
   );
 }
 
-const EmptyState = ({ icon, tone, title, body, actions }) => (
+const EmptyState = ({ icon, tone, title, body, actions }) => {
+  const m = useMotion();
+  return (
   <motion.div className="stack g12" style={{ maxWidth: 560, padding: '48px 0' }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
     <motion.div
       className="icon-circle"
       style={{ width: 56, height: 56, borderRadius: 28, background: tone[0], color: tone[1] }}
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 16, delay: 0.1 }}
+      transition={{ ...m.spatial('fast'), delay: 0.1 }}
     >
       <Icon name={icon} size={28} />
     </motion.div>
@@ -133,10 +164,26 @@ const EmptyState = ({ icon, tone, title, body, actions }) => (
     <p className="muted" style={{ margin: 0, fontSize: 15, lineHeight: 1.5 }}>{body}</p>
     <div className="row g8" style={{ marginTop: 8 }}>{actions}</div>
   </motion.div>
-);
+  );
+};
 
 export default function App() {
+  return (
+    <MotionProvider scheme="standard">
+      <Command />
+    </MotionProvider>
+  );
+}
+
+function Command() {
   const s = useCommand();
+  const m = useMotion();
+  const theme = useTheme(tokens.duration.adminMax);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const toggleRail = () => setCollapsed(c => {
+    try { localStorage.setItem('cw-rail', c ? '0' : '1'); } catch { /* ignore */ }
+    return !c;
+  });
   const cityDark = s.city !== 'Bengaluru';
   const allowed = s.roleObj.s.includes(s.screen);
   const label = (NAV.find(n => n[0] === s.screen) || [])[1];
@@ -148,7 +195,7 @@ export default function App() {
       <EmptyState
         key="city"
         icon="location_off"
-        tone={['#E9EEF6', '#444746']}
+        tone={['var(--surface-3)', 'var(--muted)']}
         title={`${s.city} isn't live yet`}
         body={`Bengaluru is the launch city. New cities open after the MVP proves fill rate and repeat clients. Partner and franchise leads for ${s.city} are tracked in Growth.`}
         actions={<button type="button" className="btn btn-filled" onClick={() => s.setCity('Bengaluru')}>Switch to Bengaluru</button>}
@@ -159,7 +206,7 @@ export default function App() {
       <EmptyState
         key="denied"
         icon="lock"
-        tone={['#F9DEDC', '#410E0B']}
+        tone={['var(--bad-bg)', 'var(--bad-fg)']}
         title={`You don't have access to ${label}`}
         body={`The ${s.roleObj.label} role can't open this module. Access requests go to the Super Admin and are written to the audit log.`}
         actions={
@@ -176,23 +223,23 @@ export default function App() {
 
   return (
     <div className="shell">
-      <Sidebar s={s} />
-      <main className="main">
-        <Topbar s={s} />
+      <Sidebar s={s} collapsed={collapsed} onToggle={toggleRail} />
+      <motion.main layout="position" transition={m.spatial()} className="main">
+        <Topbar s={s} theme={theme} />
         <section className="panel">
           <AnimatePresence mode="wait">
             <motion.div
               key={s.screen + (cityDark ? '-city' : '') + (allowed ? '' : '-denied')}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+              /* M3 "fade through" between top-level destinations. */
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1, transition: { ...m.spatial(), opacity: m.effects() } }}
+              exit={{ opacity: 0, transition: m.effects('fast') }}
             >
               {body}
             </motion.div>
           </AnimatePresence>
         </section>
-      </main>
+      </motion.main>
 
       <Modals s={s} />
       <EdgeDrawer s={s} />
@@ -202,10 +249,9 @@ export default function App() {
             key={s.toast.key}
             className="toast"
             role="status"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, transition: { duration: 0.1 } }}
-            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0, transition: { ...m.spatial('fast'), opacity: m.effects('fast') } }}
+            exit={{ opacity: 0, y: 16, transition: m.effects('fast') }}
           >
             <Icon name="check_circle" />{s.toast.msg}
           </motion.div>

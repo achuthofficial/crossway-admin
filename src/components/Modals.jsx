@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BACKUPS } from '../data.js';
 import { Icon } from '../ui.jsx';
+import { useMotion } from '../motion';
 
-const pop = {
-  initial: { opacity: 0, scale: 0.92, y: 16 },
-  animate: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 420, damping: 32 } },
-  exit: { opacity: 0, scale: 0.96, y: 8, transition: { duration: 0.15 } },
-};
-
+// M3 "fade" pattern for dialogs: scrim fades (effects spring), the dialog scales up from 92%.
 function Dialog({ size = '', onClose, children }) {
+  const mo = useMotion();
+  const pop = {
+    initial: { opacity: 0, scale: 0.92 },
+    animate: { opacity: 1, scale: 1, transition: mo.spatial() },
+    exit: { opacity: 0, scale: 0.96, transition: mo.effects('fast') },
+  };
   return (
-    <motion.div className="scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+    <motion.div className="scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={mo.effects()} onClick={onClose}>
       <motion.div className={'dialog ' + size} role="dialog" aria-modal="true" {...pop} onClick={e => e.stopPropagation()}>
         {children}
       </motion.div>
@@ -29,6 +31,7 @@ const Footer = ({ onClose, onOk, okLabel, disabled, danger }) => (
 );
 
 function Assign({ s, m, close }) {
+  const mo = useMotion();
   const [pick, setPick] = useState(null);
   const shift = s.shifts.find(x => x.id === m.id) || {};
   const ok = () => {
@@ -57,13 +60,13 @@ function Assign({ s, m, close }) {
               onClick={() => setPick(b.id)}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: dis ? 0.5 : 1, y: 0 }}
-              transition={{ delay: 0.04 * i }}
+              transition={{ ...mo.spatial(), delay: mo.stagger(i) }}
             >
               <Icon name={on ? 'radio_button_checked' : 'radio_button_unchecked'} />
               <div className="stack" style={{ flex: 1, gap: 2 }}>
                 <span style={{ fontSize: 15, fontWeight: 500 }}>{b.name}</span>
                 <span className="small muted">{b.dist} · reliability {b.rel} · match {b.match}</span>
-                {b.why && <span style={{ fontSize: 12.5, color: dis ? '#B3261E' : '#444746' }}>{b.why}</span>}
+                {b.why && <span style={{ fontSize: 12.5, color: dis ? 'var(--danger)' : 'var(--muted)' }}>{b.why}</span>}
               </div>
             </motion.button>
           );
@@ -158,6 +161,7 @@ function Dispute({ s, close }) {
 const MFA_CODE = '246810';
 
 function Mfa({ s, m, close }) {
+  const mo = useMotion();
   const [otp, setOtp] = useState('');
   const [err, setErr] = useState('');
   const [tries, setTries] = useState(0);
@@ -178,7 +182,7 @@ function Mfa({ s, m, close }) {
   };
   return (
     <Dialog size="sm" onClose={close}>
-      <motion.span initial={{ rotate: -20, scale: 0.6 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}>
+      <motion.span initial={{ rotate: -20, scale: 0.6 }} animate={{ rotate: 0, scale: 1 }} transition={mo.spatial('fast')}>
         <Icon name="verified_user" size={28} style={{ color: 'var(--primary)' }} />
       </motion.span>
       <h2>Confirm it's you</h2>
@@ -198,7 +202,7 @@ function Mfa({ s, m, close }) {
         onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setErr(''); }}
         onKeyDown={e => e.key === 'Enter' && !locked && submit()}
         animate={tries ? { x: [0, -10, 10, -6, 6, 0] } : {}}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.32, ease: 'easeOut' }} /* error shake: keyframes need a short tween, not a spring */
       />
       {(err || locked) && (
         <span className="small" style={{ color: 'var(--danger)' }}>

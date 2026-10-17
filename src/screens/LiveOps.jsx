@@ -7,7 +7,7 @@ const COLS = [
   ['confirmed', 'Confirmed', '#4285F4'],
   ['checkedin', 'Checked in', '#34A853'],
   ['late', 'Late', '#FBBC04'],
-  ['noshow', 'No-show', '#B3261E'],
+  ['noshow', 'No-show', 'var(--danger)'],
 ];
 const SEV_LABEL = { ok: 'On track', warn: 'Watch', bad: 'Act now' };
 
@@ -123,7 +123,6 @@ export default function LiveOps({ s }) {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   >
                     <div className="row between g8">
                       <span className="xs muted">{x.id} · {x.time}</span>

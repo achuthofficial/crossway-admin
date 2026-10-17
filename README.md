@@ -15,6 +15,20 @@ npm run preview  # serve dist/ locally
 `dist/` can be hosted on any static host (GitHub Pages, Netlify, S3, Nginx). Paths are relative and screens use
 hash URLs (`#/payroll`), so no server rewrites are needed.
 
+## Motion
+
+Calm Material 3 motion using the **standard** spring scheme (no overshoot, everything settles in about 300 ms) from
+the shared `design-tokens/`, through the TypeScript library in `src/motion/`:
+
+- KPI count-up, and charts that draw in with a 40 ms stagger
+- Table rows that insert and delete with height + fade; FLIP re-ordering when you sort a column
+- Approve / reject buttons that morph to a check inline, with toasts from the bottom
+- A navigation rail that expands and collapses on a spring, with a morphing indicator
+- Light and dark themes generated from the brand seed colour (Material dynamic colour), with a circular reveal
+- `prefers-reduced-motion` turns movement into fades
+
+`npm run typecheck` checks the motion library. Spec, accessibility and performance docs: [`docs/motion/`](docs/motion/README.md).
+
 ## Modules
 
 | Code | Screen | Highlights |

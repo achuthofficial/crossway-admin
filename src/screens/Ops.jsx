@@ -2,13 +2,20 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ROLES } from '../data.js';
 import { Act, Icon, itemVariants, PageHead, Stagger, Tag } from '../ui.jsx';
+import { IconMorph, useMotion } from '../motion';
 
 /* ---------------- Fraud ---------------- */
 export function Fraud({ s }) {
+  const m = useMotion();
+  const [decided, setDecided] = useState({}); // id -> 'hold' | 'clear' while the icon morph plays
+  // The flag icon morphs into the decision (gavel or check) inline, then the card leaves.
   const decide = (f, hold) => {
-    s.removeFlag(f.id);
-    s.log(f.type + (hold ? ': hold confirmed by reviewer' : ': cleared by reviewer'), f.entity);
-    s.say(hold ? 'Hold confirmed. Worker told why and how to appeal.' : 'Flag cleared. Payout released.');
+    setDecided(d => ({ ...d, [f.id]: hold ? 'hold' : 'clear' }));
+    setTimeout(() => {
+      s.removeFlag(f.id);
+      s.log(f.type + (hold ? ': hold confirmed by reviewer' : ': cleared by reviewer'), f.entity);
+      s.say(hold ? 'Hold confirmed. Worker told why and how to appeal.' : 'Flag cleared. Payout released.');
+    }, m.reduced ? 0 : 420);
   };
   return (
     <div className="stack g20">
@@ -27,17 +34,22 @@ export function Fraud({ s }) {
               className="card pad16 stack g10"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, scale: 0.9, transition: m.effects('fast') }}
             >
               <div className="row g10">
-                <div className="icon-circle" style={{ background: 'var(--bad-bg)', color: 'var(--bad-fg)' }}><Icon name={f.icon} /></div>
+                <div
+                  className="icon-circle"
+                  style={decided[f.id] === 'clear' ? { background: 'var(--ok-bg)', color: 'var(--ok-fg)' } : { background: 'var(--bad-bg)', color: 'var(--bad-fg)' }}
+                >
+                  <IconMorph icon={decided[f.id] === 'hold' ? 'gavel' : decided[f.id] === 'clear' ? 'check' : f.icon} />
+                </div>
                 <div className="stack"><span style={{ fontSize: 15, fontWeight: 500 }}>{f.type}</span><span className="xs muted">{f.src}</span></div>
               </div>
               <span style={{ fontSize: 14 }}>{f.entity}</span>
               <span className="small muted" style={{ lineHeight: 1.45 }}>{f.evidence}</span>
               <div className="row wrap g6">
-                <Act kind="d" label={f.type === 'Referral ring' ? 'Hold rewards' : 'Hold payout'} on={() => decide(f, true)} />
-                <Act label="Clear flag" on={() => decide(f, false)} />
+                <Act kind="d" disabled={!!decided[f.id]} label={f.type === 'Referral ring' ? 'Hold rewards' : 'Hold payout'} on={() => decide(f, true)} />
+                <Act disabled={!!decided[f.id]} label="Clear flag" on={() => decide(f, false)} />
               </div>
             </motion.div>
           ))}
@@ -51,7 +63,7 @@ export function Fraud({ s }) {
 export function Support({ s }) {
   const open = t => {
     if (t.act === 'Assign officer') {
-      s.patchTix(t.id, { act: 'Open', status: 'Assigned', sev: 'warn', sla: 'Officer Meera assigned · call-back in 30 min', sfg: '#7A5900' });
+      s.patchTix(t.id, { act: 'Open', status: 'Assigned', sev: 'warn', sla: 'Officer Meera assigned · call-back in 30 min', sfg: 'var(--warn-text)' });
       s.log('Assigned Grievance Officer', t.id);
       s.say('Grievance Officer assigned. Reporter identity stays hidden.');
     } else s.say('Opened ' + t.id + '.');
@@ -102,7 +114,7 @@ export function Config({ s }) {
       <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, alignItems: 'end' }}>
         <div className="stack g6"><label className="field-label">Role · state</label><div className="readonly">Housekeeping · Karnataka</div></div>
         <div className="stack g6">
-          <label className="field-label" htmlFor="rate" style={{ color: bad ? '#B3261E' : undefined }}>Worker pay per 8-h day (₹)</label>
+          <label className="field-label" htmlFor="rate" style={{ color: bad ? 'var(--danger)' : undefined }}>Worker pay per 8-h day (₹)</label>
           <motion.input
             id="rate"
             className={'input' + (bad ? ' bad' : '')}
@@ -110,11 +122,11 @@ export function Config({ s }) {
             inputMode="numeric"
             onChange={e => setRatePay(e.target.value.replace(/\D/g, ''))}
             animate={bad ? { x: [0, -4, 4, -2, 0] } : { x: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.32, ease: 'easeOut' }}
           />
         </div>
         <div className="stack g6"><label className="field-label">Client bill rate (₹)</label><div className="readonly">{BILL} · margin {margin}</div></div>
-        <div className="row g8 small" style={{ gridColumn: '1/-1', color: bad ? '#B3261E' : '#146C2E' }}>
+        <div className="row g8 small" style={{ gridColumn: '1/-1', color: bad ? 'var(--danger)' : 'var(--ok-text)' }}>
           <Icon name={bad ? 'error' : 'check_circle'} size={18} />{msg}
         </div>
         <div style={{ gridColumn: '1/-1' }}>
@@ -144,7 +156,7 @@ export function Config({ s }) {
                   <td style={{ fontWeight: 500 }}>{r.label}</td>
                   {PM[r.id].split('').map((c, i) => (
                     <td key={i} style={{ padding: '10px 8px' }}>
-                      <Icon name={c === '1' ? 'check' : 'remove'} size={18} style={{ color: c === '1' ? '#146C2E' : '#C4C7C5' }} />
+                      <Icon name={c === '1' ? 'check' : 'remove'} size={18} style={{ color: c === '1' ? 'var(--ok-text)' : 'var(--line)' }} />
                     </td>
                   ))}
                 </tr>

@@ -2,8 +2,8 @@
 export const NAV=[['dashboard','Dashboard','space_dashboard'],['liveops','Live operations','sensors'],['reqs','Requisitions','work'],['candidates','Candidates','groups'],['verification','Verification','verified_user'],['attendance','Attendance','schedule'],['billing','Billing','receipt_long'],['payroll','Payroll & payouts','payments'],['growth','Growth','trending_up'],['fraud','Fraud & quality','gpp_maybe'],['compliance','Compliance & audit','policy'],['support','Support desk','support_agent'],['config','Configuration','settings']];
 export const ALL=NAV.map(n=>n[0]);
 export const ROLES=[{id:'super',label:'Super Admin',s:ALL},{id:'city',label:'City Manager',s:ALL.filter(x=>x!=='config')},{id:'ops',label:'Operations Executive',s:['dashboard','liveops','reqs','candidates','attendance','support']},{id:'recruiter',label:'Recruiter',s:['dashboard','reqs','candidates','verification']},{id:'finance',label:'Finance',s:['dashboard','billing','payroll','compliance']},{id:'support',label:'Support Agent',s:['support','candidates']}];
-export const T={ok:['#C4EED0','#072711'],warn:['#FEEFC3','#594300'],bad:['#F9DEDC','#410E0B'],info:['#D3E3FD','#041E49'],mute:['#E9EEF6','#444746']};
-export const NFG={ok:'#444746',warn:'#7A5900',bad:'#B3261E',info:'#0B57D0',mute:'#444746'};
+export const T={ok:['var(--ok-bg)','var(--ok-fg)'],warn:['var(--warn-bg)','var(--warn-fg)'],bad:['var(--bad-bg)','var(--bad-fg)'],info:['var(--primary-soft)','var(--primary-dark)'],mute:['var(--surface-3)','var(--muted)']};
+export const NFG={ok:'var(--muted)',warn:'var(--warn-text)',bad:'var(--danger)',info:'var(--primary)',mute:'var(--muted)'};
 export const SHIFTS=[
 {id:'SH-4102',client:'Toit Brewpub',site:'Indiranagar',role:'Waiter ×2',time:'18:00–00:00',worker:'Unassigned',status:'unassigned',note:'Starts in 1 h 40 m. Standby pool empty within 5 km.',sev:'bad'},
 {id:'SH-4107',client:'Decathlon',site:'Sarjapur Rd',role:'Store helper',time:'16:00–22:00',worker:'Unassigned',status:'unassigned',note:'Autopilot invited 14, none accepted. Pay is ₹90 below the area median.',sev:'warn'},
@@ -71,11 +71,11 @@ export const FLAGS=[
 {id:'f3',icon:'hub',type:'Referral ring',src:'Rule · shared device',entity:'Ambassador Rohan P. · 9 referrals',evidence:'9 sign-ups from 2 devices in 40 min. None completed a shift. ₹2,700 pending reward.'},
 {id:'f4',icon:'currency_rupee',type:'Unusual payout',src:'Rule · 3 bank changes in 7 days',entity:'Worker CW-11214',evidence:'Bank account changed 3 times this week; latest name does not match KYC.'}];
 export const TIX=[
-{id:'GR-0091',icon:'shield_person',ic:'#B3261E',subject:'Anonymous: harassment report, night shift',from:'Worker app · identity hidden · visible to Grievance Officer only',sla:'Response due in 1 h 10 m',sfg:'#B3261E',status:'Priority',sev:'bad',act:'Assign officer'},
-{id:'TK-4410',icon:'money_off',ic:'#B3261E',subject:'Unpaid wages for 14 Oct shift',from:'Lakshmi Devi · worker',sla:'SLA breached 3 h ago',sfg:'#B3261E',status:'Escalated',sev:'bad',act:'Open'},
-{id:'TK-4415',icon:'report',ic:'#F9AB00',subject:'Agent at site asked for ₹500 fee',from:'Ravi Kumar · zero-fee violation',sla:'Due in 5 h',sfg:'#7A5900',status:'Investigating',sev:'warn',act:'Open'},
-{id:'TK-4402',icon:'storefront',ic:'#0B57D0',subject:'Replacement for no-show was late',from:'Decathlon · client',sla:'Due in 22 h',sfg:'#444746',status:'Open',sev:'info',act:'Open'},
-{id:'TK-4398',icon:'privacy_tip',ic:'#0B57D0',subject:'Request to delete my data (DPDP)',from:'Sunita Rao · data principal',sla:'Statutory deadline in 3 days',sfg:'#7A5900',status:'In progress',sev:'warn',act:'Open'}];
+{id:'GR-0091',icon:'shield_person',ic:'var(--danger)',subject:'Anonymous: harassment report, night shift',from:'Worker app · identity hidden · visible to Grievance Officer only',sla:'Response due in 1 h 10 m',sfg:'var(--danger)',status:'Priority',sev:'bad',act:'Assign officer'},
+{id:'TK-4410',icon:'money_off',ic:'var(--danger)',subject:'Unpaid wages for 14 Oct shift',from:'Lakshmi Devi · worker',sla:'SLA breached 3 h ago',sfg:'var(--danger)',status:'Escalated',sev:'bad',act:'Open'},
+{id:'TK-4415',icon:'report',ic:'#F9AB00',subject:'Agent at site asked for ₹500 fee',from:'Ravi Kumar · zero-fee violation',sla:'Due in 5 h',sfg:'var(--warn-text)',status:'Investigating',sev:'warn',act:'Open'},
+{id:'TK-4402',icon:'storefront',ic:'var(--primary)',subject:'Replacement for no-show was late',from:'Decathlon · client',sla:'Due in 22 h',sfg:'var(--muted)',status:'Open',sev:'info',act:'Open'},
+{id:'TK-4398',icon:'privacy_tip',ic:'var(--primary)',subject:'Request to delete my data (DPDP)',from:'Sunita Rao · data principal',sla:'Statutory deadline in 3 days',sfg:'var(--warn-text)',status:'In progress',sev:'warn',act:'Open'}];
 export const AUDIT=[{t:'16:12',who:'Shift Autopilot',action:'Booked backup Arun T. for no-show',entity:'SH-4064'},{t:'15:58',who:'Fraud rules',action:'Held payout pending review',entity:'Deepa R.'},{t:'15:40',who:'Meera K. (Finance)',action:'Issued credit note ₹1,800',entity:'CN-26-0112'},{t:'14:05',who:'Karthik M. (Recruiter)',action:'Moved Arjun Mehta to Interviewing',entity:'REQ-2280'}];
 export const AMBS=[
 {id:'a1',name:'Priya Nair',college:'Christ University',tier:'Captain',stats:'38 workers · 4 clients',due:'₹3,600',note:'All rewards on completed shifts',sev:'ok',act:'Approve'},

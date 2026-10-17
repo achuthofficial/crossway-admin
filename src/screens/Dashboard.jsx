@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { T } from '../data.js';
 import { CountUp, Icon, itemVariants, PageHead, Stagger } from '../ui.jsx';
+import { useMotion } from '../motion';
 
 const BARS = [96, 94, 97, 88, 82, 91, 95, 93, 79, 86, 92, 90];
 const MIX = [
@@ -11,15 +12,16 @@ const MIX = [
 ];
 
 export default function Dashboard({ s }) {
+  const m = useMotion();
   const kpis = [
-    ['Open requests', '128', '+14 since 9 am', 'liveops', '#444746'],
-    ['Fill rate', s.range === 'Today' ? '91.4%' : '93.8%', '−2.1 pts vs target', 'liveops', '#B3261E'],
-    ['No-shows', '7', '2.1% · 5 auto-replaced', 'liveops', '#444746'],
-    ['Placements MTD', '342', '+18% vs Sep', 'reqs', '#146C2E'],
-    ['Revenue MTD', '₹2.84 Cr', '+11% vs Sep', 'billing', '#146C2E'],
-    ['Payroll headcount', '6,410', '3 below min wage', 'payroll', '#B3261E'],
-    ['New sign-ups · 7d', '2,915', '38% via referrals', 'growth', '#146C2E'],
-    ['On-time payouts', '98.6%', '12 failed today', 'payroll', '#7A5900'],
+    ['Open requests', '128', '+14 since 9 am', 'liveops', 'var(--muted)'],
+    ['Fill rate', s.range === 'Today' ? '91.4%' : '93.8%', '−2.1 pts vs target', 'liveops', 'var(--danger)'],
+    ['No-shows', '7', '2.1% · 5 auto-replaced', 'liveops', 'var(--muted)'],
+    ['Placements MTD', '342', '+18% vs Sep', 'reqs', 'var(--ok-text)'],
+    ['Revenue MTD', '₹2.84 Cr', '+11% vs Sep', 'billing', 'var(--ok-text)'],
+    ['Payroll headcount', '6,410', '3 below min wage', 'payroll', 'var(--danger)'],
+    ['New sign-ups · 7d', '2,915', '38% via referrals', 'growth', 'var(--ok-text)'],
+    ['On-time payouts', '98.6%', '12 failed today', 'payroll', 'var(--warn-text)'],
   ];
 
   const att = [];
@@ -73,17 +75,17 @@ export default function Dashboard({ s }) {
                 <motion.div
                   className="bar"
                   title={v + '%'}
-                  style={{ height: Math.round(((v - 50) / 50) * 142), background: v < 85 ? '#EA4335' : '#0B57D0' }}
+                  style={{ height: Math.round(((v - 50) / 50) * 142), background: v < 85 ? '#EA4335' : 'var(--brand)' }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
-                  transition={{ delay: 0.15 + i * 0.04, type: 'spring', stiffness: 200, damping: 22 }}
+                  transition={{ ...m.spatial('slow'), delay: 0.15 + m.stagger(i) }}
                 />
                 <span style={{ fontSize: 11 }} className="muted">{(6 + i * 1.5) | 0}</span>
               </div>
             ))}
           </div>
           <div className="row g16 xs muted" style={{ marginTop: 14 }}>
-            <span className="row g6"><span className="legend-dot" style={{ background: '#0B57D0' }} />At or near target</span>
+            <span className="row g6"><span className="legend-dot" style={{ background: 'var(--brand)' }} />At or near target</span>
             <span className="row g6"><span className="legend-dot" style={{ background: '#EA4335' }} />Below 85%</span>
           </div>
         </div>
@@ -94,10 +96,10 @@ export default function Dashboard({ s }) {
             {MIX.map(([l, , w, c], i) => (
               <motion.div
                 key={l}
-                style={{ background: c }}
-                initial={{ width: 0 }}
-                animate={{ width: w }}
-                transition={{ delay: 0.2 + i * 0.1, duration: 0.6, ease: 'easeOut' }}
+                style={{ background: c, width: w, transformOrigin: 'left center' }}
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ ...m.spatial('slow'), delay: 0.2 + m.stagger(i) }}
               />
             ))}
           </div>

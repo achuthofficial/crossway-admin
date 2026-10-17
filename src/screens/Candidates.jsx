@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CANDS } from '../data.js';
 import { Icon, PageHead, Tag } from '../ui.jsx';
+import { useMotion } from '../motion';
 
 const TIERS = ['All', 'Blue', 'Grey', 'White', 'Tech', 'Campus'];
 
@@ -18,12 +19,30 @@ function exportCsv(rows) {
   URL.revokeObjectURL(a.href);
 }
 
+const KYC_ORDER = { Blocked: 0, 'On hold': 1, 'In review': 2, 'BGV pending': 3, Verified: 4 };
+const SORTS = {
+  name: c => c.name,
+  tier: c => c.tier + c.mode,
+  kyc: c => KYC_ORDER[c.kyc] ?? 9,
+  rel: c => (c.rel === '—' ? -1 : +c.rel),
+};
+const COLS = [['name', 'Candidate'], ['tier', 'Tier · mode'], ['kyc', 'Verification'], ['rel', 'Reliability'], [null, 'Flags']];
+
 export default function Candidates({ s }) {
+  const m = useMotion();
   const [tier, setTier] = useState('All');
+  const [sort, setSort] = useState({ key: null, dir: 1 });
   const q = s.q.trim().toLowerCase();
-  const cands = CANDS.filter(
+  const filtered = CANDS.filter(
     c => (tier === 'All' || c.tier === tier) && (!q || (c.name + c.id + c.phone).toLowerCase().includes(q)),
   );
+  const cands = sort.key
+    ? [...filtered].sort((a, b) => {
+        const x = SORTS[sort.key](a), y = SORTS[sort.key](b);
+        return (x > y ? 1 : x < y ? -1 : 0) * sort.dir;
+      })
+    : filtered;
+  const toggleSort = key => setSort(cur => (cur.key === key ? { key, dir: -cur.dir } : { key, dir: 1 }));
 
   return (
     <div className="stack g20">
@@ -46,7 +65,7 @@ export default function Candidates({ s }) {
           <Icon name="person_search" size={32} className="muted" />
           <span style={{ fontSize: 16, fontWeight: 500 }}>No candidates match "{s.q || tier}"</span>
           <span className="muted" style={{ fontSize: 14 }}>Try a mobile number, CrossWay ID or a different tier.</span>
-          <button type="button" className="btn md btn-outline" style={{ marginTop: 6, background: '#fff' }} onClick={() => { s.setQ(''); setTier('All'); }}>
+          <button type="button" className="btn md btn-outline" style={{ marginTop: 6, background: 'var(--surface)' }} onClick={() => { s.setQ(''); setTier('All'); }}>
             Clear search
           </button>
         </motion.div>
@@ -54,17 +73,38 @@ export default function Candidates({ s }) {
         <div className="table-wrap">
           <table className="tbl">
             <thead>
-              <tr><th>Candidate</th><th>Tier · mode</th><th>Verification</th><th>Reliability</th><th>Flags</th></tr>
+              <tr>
+                {COLS.map(([key, label]) => (
+                  <th key={label} aria-sort={sort.key === key ? (sort.dir > 0 ? 'ascending' : 'descending') : undefined}>
+                    {key ? (
+                      <button type="button" className="th-sort" onClick={() => toggleSort(key)}>
+                        {label}
+                        <motion.span
+                          className="icon"
+                          style={{ fontSize: 16, opacity: sort.key === key ? 1 : 0.35 }}
+                          animate={{ rotate: sort.key === key && sort.dir < 0 ? 180 : 0 }}
+                          transition={m.spatial('fast')}
+                          aria-hidden
+                        >
+                          arrow_upward
+                        </motion.span>
+                      </button>
+                    ) : label}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
               <AnimatePresence initial={false}>
                 {cands.map((c, i) => (
+                  /* layout = FLIP: re-sorting slides rows to their new positions with transforms. */
                   <motion.tr
                     key={c.id}
-                    layout
+                    layout="position"
+                    transition={m.spatial()}
                     initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0, transition: { delay: i * 0.025 } }}
-                    exit={{ opacity: 0 }}
+                    animate={{ opacity: 1, y: 0, transition: { ...m.spatial(), delay: m.stagger(i) } }}
+                    exit={{ opacity: 0, transition: m.effects('fast') }}
                   >
                     <td>
                       <div className="stack"><span style={{ fontWeight: 500 }}>{c.name}</span><span className="xs muted">{c.id} · {c.phone}</span></div>
@@ -72,7 +112,7 @@ export default function Candidates({ s }) {
                     <td>{c.tier} · {c.mode}</td>
                     <td><Tag sev={c.sev} lg>{c.kyc}</Tag></td>
                     <td>{c.rel}</td>
-                    <td className="small" style={{ color: c.flag === '—' ? '#444746' : c.sev === 'bad' ? '#B3261E' : '#7A5900' }}>{c.flag}</td>
+                    <td className="small" style={{ color: c.flag === '—' ? 'var(--muted)' : c.sev === 'bad' ? 'var(--danger)' : 'var(--warn-text)' }}>{c.flag}</td>
                   </motion.tr>
                 ))}
               </AnimatePresence>

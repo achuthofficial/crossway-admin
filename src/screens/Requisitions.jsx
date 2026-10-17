@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { MATCH, REQS } from '../data.js';
 import { Fill, Icon, ini, itemVariants, PageHead, Stagger, Tag } from '../ui.jsx';
+import { useMotion } from '../motion';
 
 export default function Requisitions({ s }) {
+  const m = useMotion();
   const [selReq, setSelReq] = useState('REQ-2291');
   const [picked, setPicked] = useState({});
 
@@ -29,9 +31,9 @@ export default function Requisitions({ s }) {
   const pickTop = () => {
     const p = {};
     matches
-      .filter(m => m.st !== 'conflict')
+      .filter(x => x.st !== 'conflict')
       .slice(0, Math.min(open || 3, cap || 3))
-      .forEach(m => (p[m.id] = true));
+      .forEach(x => (p[x.id] = true));
     setPicked(p);
   };
 
@@ -58,7 +60,7 @@ export default function Requisitions({ s }) {
                 <span style={{ fontSize: 15, fontWeight: 500 }}>{r.role}</span>
                 <span className="small muted">{r.client} · Owner {r.owner}</span>
                 <div className="row g10">
-                  <div className="track"><Fill width={Math.round((r.filled / r.need) * 100) + '%'} color="#0B57D0" /></div>
+                  <div className="track"><Fill width={Math.round((r.filled / r.need) * 100) + '%'} color="var(--brand)" /></div>
                   <span className="xs muted">{r.filled}/{r.need}</span>
                 </div>
               </motion.button>
@@ -73,7 +75,7 @@ export default function Requisitions({ s }) {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.2 }}
+            transition={m.spatial()}
           >
             <div className="row between start wrap g12">
               <div>
@@ -99,30 +101,30 @@ export default function Requisitions({ s }) {
                   marital status are never used. Recruiter decides.
                 </div>
                 <Stagger className="stack">
-                  {matches.map(m => {
-                    const dis = m.st === 'conflict';
-                    const wfg = m.st === 'conflict' ? '#B3261E' : m.st === 'docs' ? '#7A5900' : '#444746';
-                    const wicon = m.st === 'conflict' ? 'event_busy' : m.st === 'docs' ? 'description' : 'info';
+                  {matches.map(c => {
+                    const dis = c.st === 'conflict';
+                    const wfg = c.st === 'conflict' ? 'var(--danger)' : c.st === 'docs' ? 'var(--warn-text)' : 'var(--muted)';
+                    const wicon = c.st === 'conflict' ? 'event_busy' : c.st === 'docs' ? 'description' : 'info';
                     return (
-                      <motion.label key={m.id} variants={itemVariants} className="match-row" style={{ opacity: dis ? 0.55 : 1, cursor: dis ? 'not-allowed' : 'pointer' }}>
+                      <motion.label key={c.id} variants={itemVariants} className="match-row" style={{ opacity: dis ? 0.55 : 1, cursor: dis ? 'not-allowed' : 'pointer' }}>
                         <input
                           type="checkbox"
-                          checked={!!picked[m.id]}
+                          checked={!!picked[c.id]}
                           disabled={dis}
-                          onChange={() => setPicked(p => ({ ...p, [m.id]: !p[m.id] }))}
+                          onChange={() => setPicked(p => ({ ...p, [c.id]: !p[c.id] }))}
                         />
-                        <div className="initials">{ini(m.name)}</div>
+                        <div className="initials">{ini(c.name)}</div>
                         <div className="stack" style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                          <span style={{ fontSize: 15, fontWeight: 500 }}>{m.name}</span>
-                          <span className="small muted">{m.reasons}</span>
-                          {m.why && (
+                          <span style={{ fontSize: 15, fontWeight: 500 }}>{c.name}</span>
+                          <span className="small muted">{c.reasons}</span>
+                          {c.why && (
                             <span className="row g6" style={{ fontSize: 12.5, color: wfg }}>
-                              <Icon name={wicon} size={16} />{m.why}
+                              <Icon name={wicon} size={16} />{c.why}
                             </span>
                           )}
                         </div>
                         <div className="stack" style={{ alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: 20, color: 'var(--primary)' }}>{m.match}</span>
+                          <span style={{ fontSize: 20, color: 'var(--primary)' }}>{c.match}</span>
                           <span style={{ fontSize: 11 }} className="muted">match</span>
                         </div>
                       </motion.label>

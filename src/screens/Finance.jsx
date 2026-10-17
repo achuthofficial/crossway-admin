@@ -1,9 +1,10 @@
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { NFG, T } from '../data.js';
 import { Act, CountUp, Fill, Icon, itemVariants, PageHead, Stagger, Tag } from '../ui.jsx';
+import { IconMorph, useMotion } from '../motion';
 
 /* ---------------- Billing ---------------- */
-const AGEING = [['0–30 days', '₹41.2 L', '#F0F4F9'], ['31–60 days', '₹6.8 L', '#FEEFC3'], ['61–90 days', '₹2.1 L', '#F9DEDC'], ['90+ days', '₹0.4 L', '#F9DEDC']];
+const AGEING = [['0–30 days', '₹41.2 L', 'var(--surface-2)'], ['31–60 days', '₹6.8 L', 'var(--warn-bg)'], ['61–90 days', '₹2.1 L', 'var(--bad-bg)'], ['90+ days', '₹0.4 L', 'var(--bad-bg)']];
 const CREDIT = [
   ['Toit Brewpub', '₹5,00,000', '₹5,42,300', 108, 'Over limit. New bookings held until payment or limit increase.'],
   ['Ambrosia Foods', '₹2,00,000', '₹1,96,000', 98, 'REQ-2299 waiting on advance payment.'],
@@ -35,8 +36,8 @@ export function Billing({ s }) {
         <h2 className="h2" style={{ marginBottom: 12 }}>Credit limits</h2>
         <div className="auto-grid">
           {CREDIT.map(([client, limit, used, pct, note], i) => {
-            const bar = pct >= 100 ? '#B3261E' : pct >= 90 ? '#F9AB00' : '#0B57D0';
-            const fg = pct >= 100 ? '#B3261E' : pct >= 90 ? '#7A5900' : '#444746';
+            const bar = pct >= 100 ? 'var(--danger)' : pct >= 90 ? '#F9AB00' : 'var(--brand)';
+            const fg = pct >= 100 ? 'var(--danger)' : pct >= 90 ? 'var(--warn-text)' : 'var(--muted)';
             return (
               <div key={client} className="card pad16 stack g10">
                 <div className="row between">
@@ -90,6 +91,7 @@ export function Billing({ s }) {
 
 /* ---------------- Payroll + payouts ---------------- */
 export function Payroll({ s }) {
+  const m = useMotion();
   const steps = [
     ['Inputs', 'Attendance + LOP uploaded', 'done'],
     ['Computed', 'PF, ESI, PT, TDS, LWF', s.wageBlock ? 'error' : 'done'],
@@ -143,21 +145,25 @@ export function Payroll({ s }) {
         </div>
         <div className="steps">
           {steps.map(([l, sub, st], i) => {
-            const bg = st === 'done' ? '#0B57D0' : st === 'error' ? '#B3261E' : st === 'now' ? '#D3E3FD' : '#E9EEF6';
-            const fg = st === 'done' || st === 'error' ? '#fff' : '#041E49';
+            const bg = st === 'done' ? 'var(--brand)' : st === 'error' ? 'var(--danger)' : st === 'now' ? 'var(--primary-soft)' : 'var(--surface-3)';
+            const fg = st === 'done' ? 'var(--on-brand)' : st === 'error' ? 'var(--md-sys-color-on-error)' : 'var(--primary-dark)';
             const icon = st === 'done' ? 'check' : st === 'error' ? 'priority_high' : st === 'now' ? 'more_horiz' : 'circle';
             return (
               <div className="step" key={l}>
                 <div className="row g8">
+                  {/* Colour changes instantly; the state change is shown by an icon morph and a scale pop. */}
                   <motion.div
+                    key={st}
                     className="step-dot"
-                    animate={{ background: bg, color: fg, scale: st === 'error' ? [1, 1.15, 1] : 1 }}
-                    transition={{ duration: 0.4, delay: i * 0.08 }}
+                    style={{ background: bg, color: fg }}
+                    initial={{ scale: 0.6 }}
+                    animate={{ scale: 1 }}
+                    transition={{ ...m.spatial('fast'), delay: m.stagger(i) }}
                   >
-                    <Icon name={icon} />
+                    <IconMorph icon={icon} size={18} />
                   </motion.div>
-                  <div className="step-line" style={{ background: '#E1E3E1', overflow: 'hidden' }}>
-                    <Fill width={st === 'done' ? '100%' : '0%'} color="#0B57D0" delay={i * 0.12} />
+                  <div className="step-line" style={{ background: 'var(--line)', overflow: 'hidden' }}>
+                    <Fill width={st === 'done' ? '100%' : '0%'} color="var(--brand)" delay={i * 0.12} />
                   </div>
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 500 }}>{l}</span>
@@ -247,8 +253,8 @@ export function Growth({ s }) {
         <div className="row between" style={{ fontSize: 14 }}>
           <span style={{ fontWeight: 500 }}>October reward budget</span><span>₹4,60,000 of ₹5,00,000</span>
         </div>
-        <div className="track lg" style={{ background: '#fff' }}><Fill width="92%" color="#F9AB00" /></div>
-        <span className="small" style={{ color: '#594300' }}>92% used. New approvals above the cap queue for November.</span>
+        <div className="track lg" style={{ background: 'var(--surface)' }}><Fill width="92%" color="#F9AB00" /></div>
+        <span className="small" style={{ color: 'var(--warn-fg)' }}>92% used. New approvals above the cap queue for November.</span>
       </div>
       <Stagger className="list">
         {s.ambs.map((a, i) => (
@@ -278,6 +284,7 @@ const LICENCES = [
 ];
 
 export function Compliance({ s }) {
+  const m = useMotion();
   return (
     <div className="stack g24">
       <PageHead eyebrow="A15 · Compliance and audit" title="Compliance" />
@@ -296,22 +303,33 @@ export function Compliance({ s }) {
           Every change to money, attendance and profiles, with user and time. Actions you take in this prototype appear here.
         </p>
         <div className="list" style={{ maxHeight: 420, overflowY: 'auto' }}>
-          {s.audit.map((a, i) => (
-            <motion.div
-              key={a.t + a.action + a.entity + (s.audit.length - i)}
-              layout
-              initial={{ opacity: 0, backgroundColor: '#D3E3FD' }}
-              animate={{ opacity: 1, backgroundColor: '#ffffff' }}
-              transition={{ duration: 1.2 }}
-              className="list-row small"
-              style={{ padding: '10px 18px' }}
-            >
-              <span className="muted" style={{ flex: '0 0 52px' }}>{a.t}</span>
-              <span style={{ flex: '0 0 220px' }}>{a.who}</span>
-              <span style={{ flex: '1 1 240px' }}>{a.action}</span>
-              <span className="muted" style={{ flex: '0 0 120px' }}>{a.entity}</span>
-            </motion.div>
-          ))}
+          {/* New rows insert with height + fade; a highlight layer fades out (opacity only). */}
+          <AnimatePresence initial={false}>
+            {s.audit.map((a, i) => (
+              <motion.div
+                key={a.t + a.action + a.entity + (s.audit.length - i)}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={m.spatial()}
+                style={{ overflow: 'hidden' }}
+              >
+                <div className="list-row small" style={{ padding: '10px 18px', position: 'relative' }}>
+                  <motion.span
+                    aria-hidden
+                    style={{ position: 'absolute', inset: 0, background: 'var(--primary-soft)', pointerEvents: 'none' }}
+                    initial={{ opacity: 0.9 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                  />
+                  <span className="muted" style={{ flex: '0 0 52px', position: 'relative' }}>{a.t}</span>
+                  <span style={{ flex: '0 0 220px', position: 'relative' }}>{a.who}</span>
+                  <span style={{ flex: '1 1 240px', position: 'relative' }}>{a.action}</span>
+                  <span className="muted" style={{ flex: '0 0 120px', position: 'relative' }}>{a.entity}</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
     </div>

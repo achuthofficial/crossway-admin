@@ -1,28 +1,37 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Act, Icon, ini, itemVariants, PageHead, Tag } from '../ui.jsx';
+import { MorphButton, useMotion } from '../motion';
 
 const IC = {
-  ok: ['check_circle', '#146C2E'],
-  warn: ['error', '#B06000'],
-  fail: ['cancel', '#B3261E'],
-  na: ['remove_circle_outline', '#747775'],
+  ok: ['check_circle', 'var(--ok-text)'],
+  warn: ['error', 'var(--warn-text)'],
+  fail: ['cancel', 'var(--danger)'],
+  na: ['remove_circle_outline', 'var(--outline)'],
 };
 
 export default function Verification({ s }) {
+  const m = useMotion();
   const [sel, setSel] = useState('KYC-881');
+  const [approving, setApproving] = useState(null); // id whose Approve button is morphing to a check
   const k = s.kyc.find(x => x.id === sel) || s.kyc[0];
   const hasFail = k && k.checks.some(c => c[0] === 'fail');
 
   const next = () => (s.kyc.find(x => x.id !== k.id) || {}).id;
   const done = () => setSel(next());
 
+  // Inline confirmation: the button morphs into a check, then the row leaves (height + fade).
   const approve = () => {
     if (hasFail) return s.setModal({ kind: 'decide', type: 'approve', kyc: k, onDone: done });
-    s.removeKyc(k.id);
-    s.log('Approved KYC', k.id);
-    s.say(k.name + ' verified. Passport badge added.');
-    done();
+    const cur = k;
+    setApproving(cur.id);
+    setTimeout(() => {
+      s.removeKyc(cur.id);
+      s.log('Approved KYC', cur.id);
+      s.say(cur.name + ' verified. Passport badge added.');
+      setApproving(null);
+      setSel(id => (id === cur.id ? (s.kyc.find(x => x.id !== cur.id) || {}).id : id));
+    }, m.reduced ? 0 : 450);
   };
 
   return (
@@ -45,13 +54,13 @@ export default function Verification({ s }) {
                 <motion.button
                   key={x.id}
                   type="button"
-                  layout
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="show"
-                  exit="exit"
+                  layout="position"
+                  transition={m.spatial()}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, borderWidth: 0, marginTop: -8, transition: m.spatial('fast') }}
                   className={'select-card' + (x.id === k.id ? ' on' : '')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden' }}
                   onClick={() => setSel(x.id)}
                 >
                   <div className="initials grey">{ini(x.name)}</div>
@@ -72,7 +81,7 @@ export default function Verification({ s }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
+              transition={m.spatial()}
             >
               <div className="row g16">
                 <div className="icon-tile"><Icon name="face" /></div>
@@ -89,12 +98,12 @@ export default function Verification({ s }) {
                     className="check-row"
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.05 + i * 0.06 }}
+                    transition={{ ...m.spatial(), delay: m.stagger(i) }}
                   >
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ delay: 0.1 + i * 0.06, type: 'spring', stiffness: 500, damping: 18 }}
+                      transition={{ ...m.spatial('fast'), delay: m.stagger(i) + 0.05 }}
                     >
                       <Icon name={IC[st][0]} style={{ color: IC[st][1] }} />
                     </motion.span>
@@ -106,12 +115,18 @@ export default function Verification({ s }) {
                 ))}
               </div>
               {hasFail && (
-                <div className="row g8 small" style={{ color: '#8C1D18' }}>
+                <div className="row g8 small" style={{ color: 'var(--danger)' }}>
                   <Icon name="info" size={18} />A failed check is present. Approving needs a written override reason.
                 </div>
               )}
               <div className="row wrap g8">
-                <Act size="" kind="p" label={hasFail ? 'Approve with override' : 'Approve'} on={approve} />
+                <MorphButton
+                  className="kyc-approve"
+                  state={approving === k.id ? 'success' : 'idle'}
+                  label={hasFail ? 'Approve with override' : 'Approve'}
+                  successLabel={k.name + ' approved'}
+                  onClick={approve}
+                />
                 <Act size="" kind="t" label="Ask to re-upload" on={() => s.setModal({ kind: 'decide', type: 'reupload', kyc: k, onDone: done })} />
                 {k.vendor && (
                   <Act
